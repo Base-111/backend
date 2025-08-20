@@ -38,8 +38,10 @@ services:
       POSTGRES_DB: ${DB_NAME:?error}
       POSTGRES_USER: ${DB_USERNAME:?error}
       POSTGRES_PASSWORD: ${DB_PASSWORD:?error}
-    expose:
-      - "5432"
+#    expose:
+#      - "5432"
+    ports:
+      - "5432:5432"
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d ${DB_NAME}" ]
       interval: 10s
@@ -52,29 +54,90 @@ services:
         limits:
           cpus: '1'
           memory: 4G
-    networks:
-      - backend
 
-  api:
-    container_name: api_${TAG}
-    build:
-      context: .
-    depends_on:
-      - postgres
+  keycloak_web:
+    image: quay.io/keycloak/keycloak:23.0.7
+    container_name: keycloak_web
     environment:
-      - API_PORT=${API_PORT}
-      - DB_HOST=${DB_HOST}
-      - DB_PORT=${DB_PORT}
-      - DB_USERNAME=${DB_USERNAME}
-      - DB_NAME=${DB_NAME}
-      - DB_SSL_MODE=${DB_SSL_MODE}
-      - DB_PASSWORD=${DB_PASSWORD}
-    ports:
-      - "${API_PORT}:${API_PORT}"
-    restart: always
-    deploy:
-      resources:
-        limits:
-          cpus: '2'
-          memory: 1G
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloakdb:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: password
 
+      KC_HOSTNAME: localhost
+      KC_HOSTNAME_PORT: 8080
+      KC_HOSTNAME_STRICT: false
+      KC_HOSTNAME_STRICT_HTTPS: false
+
+      KC_LOG_LEVEL: info
+      KC_METRICS_ENABLED: true
+      KC_HEALTH_ENABLED: true
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    command: start-dev
+    depends_on:
+      - keycloakdb
+    ports:
+      - "8080:8080"
+
+  keycloakdb:
+    image: postgres:15
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: password
+
+  redis:
+    container_name: redis
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    restart: on-failure
+    environment:
+      REDIS_PORT: 6379
+      REDIS_USERNAME: redis_user
+      REDIS_PASSWORD: redis_password
+      REDIS_DB: 0
+    volumes:
+      - redis-data:/data
+    command: [
+      "redis-server",
+      "--port","6379",
+      "--bind","0.0.0.0",
+      "--protected-mode","yes",
+      # пароль для default — теперь инстанс считается защищённым
+      "--user","default","on",">DEFAULT_STRONG_PW","~*","&*","+@all",
+      # ваш именованный пользователь
+      "--user","redis_user","on",">redis_password","~*","&*","+@all",
+      "--save","60","1",
+      "--loglevel","warning"
+    ]
+
+#  api:
+#    container_name: api_${TAG}
+#    build:
+#      context: .
+#    depends_on:
+#      - postgres
+#    environment:
+#      - API_PORT=${API_PORT}
+#      - DB_HOST=${DB_HOST}
+#      - DB_PORT=${DB_PORT}
+#      - DB_USERNAME=${DB_USERNAME}
+#      - DB_NAME=${DB_NAME}
+#      - DB_SSL_MODE=${DB_SSL_MODE}
+#      - DB_PASSWORD=${DB_PASSWORD}
+#    ports:
+#      - "${API_PORT}:${API_PORT}"
+#    restart: always
+#    deploy:
+#      resources:
+#        limits:
+#          cpus: '2'
+#          memory: 1G
+
+volumes:
+  postgres_data:
+  redis-data:
