@@ -1,3 +1,4 @@
+.PHONY: ollama-webui
 include .$(PWD)/.env
 
 create-app:
@@ -11,3 +12,6 @@ create-migrations:
 
 delete-migrations:
 	migrate -database postgres://${DB_USERNAME}:${DB_PASSWORD}@localhost:${DB_PORT}/${DB_NAME}?sslmode=disable -path ./migrations down
+
+ollama-webui:
+	docker-compose up -d ollama webui
