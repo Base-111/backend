@@ -18,6 +18,17 @@ func NewReadHandler(uc prompt.ReadPromptUC) *ReadHandler {
 	}
 }
 
+// Handle godoc
+// @Summary      Получить prompt
+// @Description  Возвращает prompt по ID.
+// @Tags         prompt
+// @Produce      json
+// @Param        id   path      int  true  "ID"
+// @Success      200  {object}  domain.Prompt
+// @Failure      400  {string}  string
+// @Failure      404  {string}  string
+// @Failure      500  {string}  string
+// @Router       /admin/prompt/{id} [get]
 func (h *ReadHandler) Handle(c *gin.Context) {
 	id := c.Param("id")
 	parsedId, err := strconv.Atoi(id)

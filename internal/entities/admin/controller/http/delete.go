@@ -18,6 +18,17 @@ func NewDeleteHandler(uc prompt.DeletePromptUC) *DeleteHandler {
 	}
 }
 
+// Handle godoc
+// @Summary      Удалить prompt
+// @Description  Удаляет prompt по ID.
+// @Tags         prompt
+// @Produce      json
+// @Param        id   path      int  true  "ID"
+// @Success      204  {string}  string  "no content"
+// @Failure      400  {string}  string
+// @Failure      404  {string}  string
+// @Failure      500  {string}  string
+// @Router       /admin/prompt/{id} [delete]
 func (h *DeleteHandler) Handle(c *gin.Context) {
 	id := c.Param("id")
 	parsedId, err := strconv.Atoi(id)

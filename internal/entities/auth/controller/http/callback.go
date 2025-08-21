@@ -12,6 +12,17 @@ import (
 	"golang.org/x/oauth2"
 )
 
+// Callback godoc
+// @Summary      Callback авторизации
+// @Description  Обрабатывает ответ от провайдера, устанавливает cookie `session_id` и `user_email`, затем редиректит на `/`.
+// @Tags         auth
+// @Param        state  query     string  true   "OAuth2 state"
+// @Param        code   query     string  true   "Authorization code"
+// @Produce      json
+// @Success      307  {string}  string  "Temporary Redirect"
+// @Failure      400  {string}  string  "bad request"
+// @Failure      500  {string}  string  "internal error"
+// @Router       /auth/callback [get]
 func (a *AuthHandler) Callback(c *gin.Context) {
 	callbackData, err := newCallbackData(c)
 	if err != nil {

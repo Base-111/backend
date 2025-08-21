@@ -19,6 +19,17 @@ func NewCreateHandler(uc prompt.CreatePromptUC) *CreateHandler {
 	}
 }
 
+// Handle godoc
+// @Summary      Создать prompt
+// @Description  Создаёт новый prompt.
+// @Tags         prompt
+// @Accept       json
+// @Produce      json
+// @Param        prompt  body      domain.Prompt  true  "Новый prompt"
+// @Success      201     {string}  string         "created"
+// @Failure      400     {string}  string
+// @Failure      500     {string}  string
+// @Router       /admin/prompt/ [post]
 func (h *CreateHandler) Handle(c *gin.Context) {
 	var inputJson domain.Prompt
 	if err := c.ShouldBindJSON(&inputJson); err != nil {

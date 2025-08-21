@@ -7,6 +7,15 @@ import (
 	"net/http"
 )
 
+// Logout godoc
+// @Summary      Выход из системы
+// @Description  Удаляет сессионные cookie и перенаправляет на logout провайдера Keycloak.
+// @Tags         auth
+// @Produce      json
+// @Success      302  {string}  string  "Found"
+// @Failure      400  {string}  string  "bad request"
+// @Failure      500  {string}  string  "internal error"
+// @Router       /auth/logout [get]
 func (a *AuthHandler) Logout(c *gin.Context) {
 	sessionId, err := c.Cookie("session_id")
 	if err != nil {

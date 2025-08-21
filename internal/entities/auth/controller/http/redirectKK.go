@@ -7,6 +7,14 @@ import (
 	"net/http"
 )
 
+// RedirectToKeycloak godoc
+// @Summary      Начало авторизации
+// @Description  Перенаправляет пользователя на провайдера (Keycloak) для авторизации. Возвращает 302 с заголовком Location.
+// @Tags         auth
+// @Produce      json
+// @Success      302  {string}  string  "Found"
+// @Failure      500  {string}  string  "internal error"
+// @Router       /auth/login [get]
 func (a *AuthHandler) RedirectToKeycloak(c *gin.Context) {
 	stateID, err := utils.GenerateRandomBase64Str()
 	if err != nil {

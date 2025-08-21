@@ -19,6 +19,17 @@ func NewReadAllHandler(uc prompt.ReadPromptUC) *ReadAllHandler {
 	}
 }
 
+// Handle godoc
+// @Summary      Список prompts
+// @Description  Возвращает список prompts с пагинацией.
+// @Tags         prompt
+// @Produce      json
+// @Param        page       query     int   false  "Номер страницы"       minimum(1)
+// @Param        page_size  query     int   false  "Размер страницы"       minimum(1) maximum(100)
+// @Success      200        {array}   domain.Prompt
+// @Failure      400        {string}  string
+// @Failure      500        {string}  string
+// @Router       /admin/prompt/ [get]
 func (h *ReadAllHandler) Handle(c *gin.Context) {
 	pageParam := c.DefaultQuery("page", "1")
 	page, err := strconv.ParseInt(pageParam, 10, 64)

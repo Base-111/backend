@@ -20,6 +20,19 @@ func NewUpdateHandler(uc prompt.UpdatePromptUC) *UpdateHandler {
 	}
 }
 
+// Handle godoc
+// @Summary      Обновить prompt
+// @Description  Обновляет существующий prompt по ID.
+// @Tags         prompt
+// @Accept       json
+// @Produce      json
+// @Param        id      path      int           true  "ID"
+// @Param        prompt  body      domain.Prompt true  "Данные для обновления"
+// @Success      201     {string}  string        "updated"
+// @Failure      400     {string}  string
+// @Failure      404     {string}  string
+// @Failure      500     {string}  string
+// @Router       /admin/prompt/{id} [put]
 func (h *UpdateHandler) Handle(c *gin.Context) {
 	var input domain.Prompt
 	id, err := strconv.Atoi(c.Param("id"))

@@ -1,0 +1,263 @@
+basePath: /
+definitions:
+  domain.Prompt:
+    properties:
+      id:
+        type: integer
+      is_system:
+        type: boolean
+      name:
+        type: string
+      text:
+        type: string
+    type: object
+host: localhost:8081
+info:
+  contact:
+    email: koreshkov200@mail.ru
+    name: Team Base-111
+  description: API хакатона
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: Base-111 Backend API
+  version: 0.0.1
+paths:
+  /admin/prompt/:
+    get:
+      description: Возвращает список prompts с пагинацией.
+      parameters:
+      - description: Номер страницы
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - description: Размер страницы
+        in: query
+        maximum: 100
+        minimum: 1
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.Prompt'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Список prompts
+      tags:
+      - prompt
+    post:
+      consumes:
+      - application/json
+      description: Создаёт новый prompt.
+      parameters:
+      - description: Новый prompt
+        in: body
+        name: prompt
+        required: true
+        schema:
+          $ref: '#/definitions/domain.Prompt'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: created
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Создать prompt
+      tags:
+      - prompt
+  /admin/prompt/{id}:
+    delete:
+      description: Удаляет prompt по ID.
+      parameters:
+      - description: ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: no content
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "404":
+          description: Not Found
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Удалить prompt
+      tags:
+      - prompt
+    get:
+      description: Возвращает prompt по ID.
+      parameters:
+      - description: ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Prompt'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "404":
+          description: Not Found
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Получить prompt
+      tags:
+      - prompt
+    put:
+      consumes:
+      - application/json
+      description: Обновляет существующий prompt по ID.
+      parameters:
+      - description: ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Данные для обновления
+        in: body
+        name: prompt
+        required: true
+        schema:
+          $ref: '#/definitions/domain.Prompt'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: updated
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "404":
+          description: Not Found
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Обновить prompt
+      tags:
+      - prompt
+  /auth/callback:
+    get:
+      description: Обрабатывает ответ от провайдера, устанавливает cookie `session_id`
+        и `user_email`, затем редиректит на `/`.
+      parameters:
+      - description: OAuth2 state
+        in: query
+        name: state
+        required: true
+        type: string
+      - description: Authorization code
+        in: query
+        name: code
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "307":
+          description: Temporary Redirect
+          schema:
+            type: string
+        "400":
+          description: bad request
+          schema:
+            type: string
+        "500":
+          description: internal error
+          schema:
+            type: string
+      summary: Callback авторизации
+      tags:
+      - auth
+  /auth/login:
+    get:
+      description: Перенаправляет пользователя на провайдера (Keycloak) для авторизации.
+        Возвращает 302 с заголовком Location.
+      produces:
+      - application/json
+      responses:
+        "302":
+          description: Found
+          schema:
+            type: string
+        "500":
+          description: internal error
+          schema:
+            type: string
+      summary: Начало авторизации
+      tags:
+      - auth
+  /auth/logout:
+    get:
+      description: Удаляет сессионные cookie и перенаправляет на logout провайдера
+        Keycloak.
+      produces:
+      - application/json
+      responses:
+        "302":
+          description: Found
+          schema:
+            type: string
+        "400":
+          description: bad request
+          schema:
+            type: string
+        "500":
+          description: internal error
+          schema:
+            type: string
+      summary: Выход из системы
+      tags:
+      - auth
+swagger: "2.0"
