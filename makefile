@@ -7,7 +7,7 @@ COMPOSE ?= docker compose
 # Подключаем .env, если он есть
 ifneq (,$(wildcard .env))
 include .env
-export $(shell sed -ne 's/^\([^#[:space:]][^=[:space:]]*\)=.*/\1/p' .env)
+export $(shell grep -E '^[A-Za-z_][A-Za-z0-9_]*=' .env | cut -d= -f1)
 endif
 
 # Собираем URL БД из переменных окружения
