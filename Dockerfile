@@ -13,6 +13,5 @@ FROM alpine:3.19
 WORKDIR /root/
 
 COPY --from=dev /api/main .
-COPY --from=dev /api/config/. config/.
 
 CMD ["./main"]

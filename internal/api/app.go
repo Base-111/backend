@@ -3,6 +3,13 @@ package api
 import (
 	"context"
 	"fmt"
+	"log"
+	"log/slog"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
 	"github.com/Base-111/backend/internal/api/router"
 	"github.com/Base-111/backend/internal/api/server"
 	"github.com/Base-111/backend/internal/config"
@@ -19,12 +26,6 @@ import (
 	"github.com/muonsoft/validation/validator"
 	"github.com/redis/go-redis/v9"
 	"golang.org/x/text/language"
-	"log"
-	"log/slog"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
 )
 
 func Run() error {
