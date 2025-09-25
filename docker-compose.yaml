@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   postgres:
-    container_name: postgres
+    container_name: database
     image: postgres:14.8-alpine3.18
     command:
       - "postgres"
@@ -56,7 +56,7 @@ services:
           memory: 4G
 
   keycloakdb:
-    container_name: keycloakdb
+    container_name: auth_database
     image: postgres:15
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -65,7 +65,7 @@ services:
       POSTGRES_USER: ${KC_POSTGRES_USER:?error}
       POSTGRES_PASSWORD: ${KC_POSTGRES_PASSWORD:?error}
     ports:
-      - "5433:5432"
+      - ":5432"
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U ${KC_POSTGRES_USER} -d ${KC_POSTGRES_DB}" ]
       interval: 10s
@@ -74,77 +74,33 @@ services:
 
   keycloak_web:
     image: quay.io/keycloak/keycloak:23.0.7
-    container_name: keycloak_web
+    container_name: auth_web
     environment:
-      KC_DB: ${KC_DB}
-      KC_DB_URL: ${KC_DB_URL}
-      KC_DB_USERNAME: ${KC_DB_USERNAME}
-      KC_DB_PASSWORD: ${KC_DB_PASSWORD}
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloakdb:5432/${KC_POSTGRES_DB}
+      KC_DB_USERNAME: ${KC_POSTGRES_USER}
+      KC_DB_PASSWORD: ${KC_POSTGRES_PASSWORD}
       KC_HOSTNAME: ${KC_HOSTNAME}
       KC_HOSTNAME_PORT: ${KC_HOSTNAME_PORT}
-      KC_HOSTNAME_STRICT: ${KC_HOSTNAME_STRICT}
-      KC_HOSTNAME_STRICT_HTTPS: ${KC_HOSTNAME_STRICT_HTTPS}
-      KC_HTTP_ENABLED: ${KC_HTTP_ENABLED}
-      KC_PROXY: ${KC_PROXY}
-      KC_HOSTNAME_ADMIN_URL: http://localhost:8085
-      KC_HOSTNAME_STRICT_BACKCHANNEL: "false"
-      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "false"
       KC_LOG_LEVEL: ${KC_LOG_LEVEL}
       KC_METRICS_ENABLED: ${KC_METRICS_ENABLED}
       KC_HEALTH_ENABLED: ${KC_HEALTH_ENABLED}
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
-    command: start-dev
+      AUTH_REALM: ${AUTH_REALM}
+      AUTH_CLIENT_ID: ${AUTH_CLIENT_ID}
+      AUTH_CLIENT_SECRET: ${AUTH_CLIENT_SECRET}
+      KC_IMPORT: /opt/keycloak/data/import/realm.json
+      JAVA_OPTS_APPEND: -Dkeycloak.migration.replace-placeholders=true
+    command: start-dev --import-realm
+    volumes:
+      - ./configs/realm.json:/opt/keycloak/data/import/realm.json:ro
     depends_on:
       keycloakdb:
         condition: service_healthy
     ports:
       - "${KC_HOSTNAME_PORT}:8080"
 
-  redis:
-    container_name: redis
-    image: redis:7-alpine
-    ports:
-      - "${REDIS_PORT}:${REDIS_PORT}"
-    restart: on-failure
-    environment:
-      REDIS_USERNAME: ${REDIS_USERNAME}
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
-    volumes:
-      - redis-data:/data
-    command: [
-      "redis-server",
-      "--port", "${REDIS_PORT}",
-      "--bind", "0.0.0.0",
-      "--protected-mode", "yes",
-      "--requirepass", "${REDIS_PASSWORD}",
-      "--save", "60", "1",
-      "--loglevel", "warning"
-    ]
-
-  webui:
-    image: ghcr.io/open-webui/open-webui:git-09a81eb
-    ports:
-      - "8080:8080"
-    environment:
-      - OLLAMA_BASE_URL=http://ollama:11434
-    volumes:
-      - ./open-webui:/app/backend/data
-    depends_on:
-      - ollama
-
-  ollama:
-    image: docker.io/ollama/ollama:latest
-    ports:
-      - "11434:11434"
-    volumes:
-      - ./ollama:/root/.ollama
-    container_name: ollama
-    pull_policy: always
-    tty: true
-    restart: always
-    environment:
-      - OLLAMA_KEEP_ALIVE=24h
 
   api:
     container_name: api_${TAG}
@@ -154,9 +110,6 @@ services:
       - ./.env:/root/.env
     depends_on:
       - postgres
-      - redis
-    extra_hosts:
-      - "localhost:host-gateway"
     environment:
       API_PORT: ${APP_PORT}
       DB_HOST: ${DB_HOST}
@@ -165,9 +118,6 @@ services:
       DB_NAME: ${DB_NAME}
       DB_SSL_MODE: ${DB_SSL_MODE}
       DB_PASSWORD: ${DB_PASSWORD}
-      REDIS_HOST: ${REDIS_HOST}
-      REDIS_PORT: ${REDIS_PORT}
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
     ports:
       - "${APP_PORT}:${APP_PORT}"
     restart: always
@@ -179,4 +129,3 @@ services:
 
 volumes:
   postgres_data:
-  redis-data:

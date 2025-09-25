@@ -2,9 +2,8 @@ package router
 
 import (
 	_ "github.com/Base-111/backend/docs"
+	auth "github.com/Base-111/backend/internal/api/middleware"
 	admin "github.com/Base-111/backend/internal/entities/admin/controller/http/router"
-	auth "github.com/Base-111/backend/internal/entities/auth/controller/http"
-	authRouter "github.com/Base-111/backend/internal/entities/auth/controller/http/router"
 	"github.com/Base-111/backend/pkg/logs/api"
 	"github.com/Base-111/backend/pkg/tracing"
 	"github.com/gin-contrib/cors"
@@ -14,13 +13,11 @@ import (
 )
 
 type ApiHandler struct {
-	authHandler  *auth.AuthHandler
 	adminHandler *admin.HandlerContainer
 }
 
-func NewApiHandler(authHandler *auth.AuthHandler, adminHandler *admin.HandlerContainer) *ApiHandler {
+func NewApiHandler(adminHandler *admin.HandlerContainer) *ApiHandler {
 	return &ApiHandler{
-		authHandler:  authHandler,
 		adminHandler: adminHandler,
 	}
 }
@@ -34,10 +31,10 @@ func (h *ApiHandler) SetupRoutes() (*gin.Engine, error) {
 		api.RequestLoggingMiddleware(),
 		api.LoggerMiddleware(),
 		tracing.Middleware(),
+		auth.AuthMiddleware(),
 	)
 
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-	authRouter.InitAuthRoutes(router, h.authHandler)
 	admin.InitAdminRoutes(router, h.adminHandler)
 
 	return router, nil

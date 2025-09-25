@@ -3,13 +3,13 @@ package api
 import (
 	"context"
 	"fmt"
-	"log"
 	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
+	"github.com/Base-111/backend/internal/api/middleware"
 	"github.com/Base-111/backend/internal/api/router"
 	"github.com/Base-111/backend/internal/api/server"
 	"github.com/Base-111/backend/internal/config"
@@ -17,14 +17,11 @@ import (
 	admin "github.com/Base-111/backend/internal/entities/admin/controller/http/router"
 	"github.com/Base-111/backend/internal/entities/admin/repository/postgres"
 	"github.com/Base-111/backend/internal/entities/admin/usecase/prompt"
-	authhandler "github.com/Base-111/backend/internal/entities/auth/controller/http"
-	rds2 "github.com/Base-111/backend/internal/entities/auth/store/redis"
-	"github.com/Base-111/backend/pkg/auth"
 	"github.com/Base-111/backend/pkg/repository"
+	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/muonsoft/validation"
 	"github.com/muonsoft/validation/message/translations/english"
 	"github.com/muonsoft/validation/validator"
-	"github.com/redis/go-redis/v9"
 	"golang.org/x/text/language"
 )
 
@@ -35,8 +32,6 @@ func Run() error {
 	if err != nil {
 		return err
 	}
-
-	serverAddr := fmt.Sprintf("%s:%s", cfg.AppHost, cfg.AppPort)
 	err = validator.SetUp(
 		validation.DefaultLanguage(language.English),
 		validation.Translations(english.Messages),
@@ -46,39 +41,17 @@ func Run() error {
 		return err
 	}
 
-	redisClient := redis.NewClient(&cfg.RedisConfig)
-	if err = redisClient.Ping(ctx).Err(); err != nil {
-		log.Fatalf("failed to connect to Redis: %v", err)
-		return err
-	}
-	defer redisClient.Close()
-
 	serv := new(server.Server)
 
-	authOptions := []auth.Option{
-		auth.WithClientSecret(cfg.Auth.ClientSecret),
-		auth.WithRealmKeycloak(cfg.Auth.Realm),
-	}
-	authClient, err := auth.New(
-		ctx,
-		cfg.Auth.BaseURL,
-		cfg.Auth.ClientID,
-		cfg.Auth.RedirectURL,
-		authOptions...,
-	)
-
+	keycloakURL := "http://localhost:8080/realms/myrealm"
+	provider, err := oidc.NewProvider(ctx, keycloakURL)
 	if err != nil {
 		return err
 	}
 
-	authStore := rds2.NewAuthRedisManager(redisClient)
-	sessionStore := rds2.NewSessionRedisManager(redisClient)
-	authHandler := authhandler.New(cfg,
-		serverAddr,
-		authClient,
-		authStore,
-		sessionStore,
-	)
+	middleware.Verifier = provider.Verifier(&oidc.Config{
+		ClientID: "myclient",
+	})
 
 	dbConnection, err := repository.ConnectViaPGXConnect(ctx, cfg.Postgres)
 
@@ -107,7 +80,7 @@ func Run() error {
 		UpdateHandler:  updateHandler,
 	}
 
-	apiHandlers := router.NewApiHandler(authHandler, container)
+	apiHandlers := router.NewApiHandler(container)
 
 	go func() {
 		handlers, err := apiHandlers.SetupRoutes()
